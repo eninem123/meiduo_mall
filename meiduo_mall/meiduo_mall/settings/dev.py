@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# os.path.dirname用一次就拿１次当前目录，这里用了2次，拿到3级目录/home/python/Desktop/meiduo_mall/meiduo_mall/meiduo_mall
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 添加导包路径后注册模块就不需要写那么长路径
@@ -41,8 +42,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # 注册users模块
-    'meiduo_mall.apps.users.apps.UsersConfig',
+    # 'meiduo_mall.apps.users.apps.UsersConfig',
 'users.apps.UsersConfig',
+    # 前后端分离需要用，用来写接口
 'rest_framework',
 ]
 
@@ -90,7 +92,7 @@ DATABASES = {
         'NAME': 'meiduo_mall'  # 数据库名字
     }
 }
-
+#　redis数据库，做缓存
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -99,6 +101,7 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
+    # 配置给admin运营后台，不是给前端,前台商城使用另一种方式保存用户信息
     "session": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/1",
@@ -108,6 +111,7 @@ CACHES = {
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# 存到session的名字
 SESSION_CACHE_ALIAS = "session"
 
 # Password validation
@@ -147,3 +151,65 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# 日志
+LOGGING = {
+    'version': 1,
+    # 是否禁用其他日志功能，False表示不禁用
+    'disable_existing_loggers': False,
+    # 日志输出格式
+    'formatters': {
+        # 详细
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)d %(message)s'
+        },
+        # 简单
+        'simple': {
+            'format': '%(levelname)s %(module)s %(lineno)d %(message)s'
+        },
+    },
+    # 日志过滤器，不必要的过滤
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    # 日志处理方式
+    'handlers': {
+        # 控制台输出
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        # 文件输出
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            # 路径/home/python/Desktop/meiduo_mall/meiduo_mall+logs
+            'filename': os.path.join(os.path.dirname(BASE_DIR), "logs/meiduo.log"),  # 日志文件的位置
+            'maxBytes': 300 * 1024 * 1024,
+            # 最多10个文件
+            'backupCount': 10,
+            'formatter': 'verbose'
+        },
+    },
+    # 日志器[处理日志的对象配置]
+    'loggers': {
+        # 可以设置多个应用对象
+        'django': {  # 定义了一个名为django的日志器
+            # 处理方式可以输出到终端或者文件
+            'handlers': ['console', 'file'],
+            # 是否把当前日志向上级传递
+            'propagate': True,
+        },
+    }
+}
+
+# 重新设置drf框架中的异常处理机制
+REST_FRAMEWORK = {
+    # 异常处理
+    'EXCEPTION_HANDLER': 'meiduo_mall.utils.exceptions.exception_handler',
+}
